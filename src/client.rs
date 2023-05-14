@@ -1,5 +1,14 @@
 use reqwest::{blocking::Body, header, StatusCode};
 
+crate::generate_reqwest_client!(ActiveCampaignClientBuilder, {
+    contact => {
+        search: get "contacts",
+        delete: delete "contacts/{id}" id: &str,
+        create: post "contacts",
+        sync: post "contact/sync"
+    }
+});
+
 /// https://developers.activecampaign.com/reference/overview
 pub fn init() -> ActiveCampaignApiClient {
     ActiveCampaignApiClient::default()
@@ -21,27 +30,33 @@ fn init_client() -> reqwest::blocking::Client {
 }
 
 pub struct ActiveCampaignApiClient {
-    client: reqwest::blocking::Client,
-    base_url: String,
+    builder: ActiveCampaignClientBuilder,
 }
 
 impl Default for ActiveCampaignApiClient {
     fn default() -> Self {
-        Self {
-            client: init_client(),
-            base_url: crate::config::load_env_var("ACTIVECAMPAIGN_API_BASE_URL"),
-        }
+        let builder = ActiveCampaignClientBuilder::new(
+            &crate::config::load_env_var("ACTIVECAMPAIGN_API_BASE_URL"),
+            Some(init_client()),
+        );
+
+        Self { builder }
     }
 }
 
 impl ActiveCampaignApiClient {
     /// https://developers.activecampaign.com/reference/list-all-contacts
+    pub fn list_contacts(&self) -> Result<reqwest::blocking::Response, reqwest::Error> {
+        self.builder.contact_search().send()
+    }
+
     pub fn find_contact_by_email(
         &self,
         email: &str,
     ) -> Result<reqwest::blocking::Response, reqwest::Error> {
-        self.client
-            .get(format!("{}/contacts?email={}", self.base_url, email))
+        self.builder
+            .contact_search()
+            .query(&[("email", email)])
             .send()
     }
 
@@ -50,17 +65,12 @@ impl ActiveCampaignApiClient {
         &self,
         payload: T,
     ) -> Result<reqwest::blocking::Response, reqwest::Error> {
-        self.client
-            .post(format!("{}/contacts", self.base_url))
-            .body(payload)
-            .send()
+        self.builder.contact_create().body(payload).send()
     }
 
     /// https://developers.activecampaign.com/reference/delete-contact
     pub fn delete_contact(&self, id: &str) -> Result<reqwest::blocking::Response, reqwest::Error> {
-        self.client
-            .delete(format!("{}/contacts/{}", self.base_url, id))
-            .send()
+        self.builder.contact_delete(id).send()
     }
 }
 
@@ -101,6 +111,15 @@ mod test {
     use super::*;
     use crate::models::*;
     use reqwest::StatusCode;
+
+    #[test]
+    fn list_contacts() {
+        let client = init();
+        let response = client.list_contacts().unwrap();
+        assert_eq!(response.status(), StatusCode::OK);
+        //println!("{:#?}", response);
+        //println!("{:#?}", response.json::<serde_json::Value>().unwrap());
+    }
 
     #[test]
     fn find_contact_by_email() {
