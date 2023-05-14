@@ -1,13 +1,5 @@
+use crate::ActiveCampaignBuilder;
 use reqwest::{blocking::Body, header, StatusCode};
-
-crate::generate_reqwest_client!(ActiveCampaignClientBuilder, {
-    contact => {
-        search: get "contacts",
-        delete: delete "contacts/{id}" id: &str,
-        create: post "contacts",
-        sync: post "contact/sync"
-    }
-});
 
 /// https://developers.activecampaign.com/reference/overview
 pub fn init() -> ActiveCampaignApiClient {
@@ -30,12 +22,12 @@ fn init_client() -> reqwest::blocking::Client {
 }
 
 pub struct ActiveCampaignApiClient {
-    builder: ActiveCampaignClientBuilder,
+    builder: ActiveCampaignBuilder,
 }
 
 impl Default for ActiveCampaignApiClient {
     fn default() -> Self {
-        let builder = ActiveCampaignClientBuilder::new(
+        let builder = ActiveCampaignBuilder::new(
             &crate::config::load_env_var("ACTIVECAMPAIGN_API_BASE_URL"),
             Some(init_client()),
         );
@@ -117,8 +109,6 @@ mod test {
         let client = init();
         let response = client.list_contacts().unwrap();
         assert_eq!(response.status(), StatusCode::OK);
-        //println!("{:#?}", response);
-        //println!("{:#?}", response.json::<serde_json::Value>().unwrap());
     }
 
     #[test]

@@ -4,13 +4,13 @@
 ///
 /// ```rust
 /// generate_reqwest_client!(ApiClient, {
-///     user => {
+///     user {
 ///         get_by_id: get "user/{id}" id: &str,
 ///         delete_by_id: delete "user/{id}" id: &str,
 ///         create: post "user",
 ///         list: get "users"
 ///     },
-///     contact => {
+///     contact {
 ///         get_by_id: get "contact/{id}" id: &str,
 ///         delete_by_id: delete "contact/{id}" id: &str,
 ///         create: post "contact",
@@ -22,20 +22,39 @@
 macro_rules! generate_reqwest_client {
     ($client_type:ident, {
         $(
-            $resource:ident => {
+            $resource:ident {
                 $(
                     $name:ident: $method:ident $url:literal $($param:ident : $type:ty)*
                 ),+
              }
         ),+
     }) => {
+        /* pub struct ApiClientHelper {
+            base_url: String,
+            client: reqwest::blocking::Client,
+        } */
+
         paste::paste! {
-            pub struct $client_type {
+
+            /* pub mod [<$client_type:snake>] {
+                $(
+                    pub mod [<$resource:snake>] {
+                        $(
+                            pub fn [<$name:snake>](helper: &super::super::ApiClientHelper $(, $param: $type)*) -> reqwest::blocking::RequestBuilder {
+                                let url = format!(concat!("{}/", $url), helper.base_url $(, $param = $param)*);
+                                helper.client.$method(&url)
+                            }
+                        )+
+                    }
+                ),+
+            } */
+
+            pub struct [<$client_type Builder>] {
                 base_url: String,
                 client: reqwest::blocking::Client,
             }
 
-            impl $client_type {
+            impl [<$client_type Builder>] {
                 pub fn new(base_url: &str, client: Option<reqwest::blocking::Client>) -> Self {
                     Self {
                         base_url: base_url.to_string(),
