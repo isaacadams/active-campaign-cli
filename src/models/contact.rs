@@ -128,7 +128,7 @@ mod test {
     }
 
     #[test]
-    fn deserialize_2() -> Result<()> {
+    fn deserialize_null_should_be_none() -> Result<()> {
         let json_str = r#"{
             "contact": {
                 "email": "johndoe@example.com",
@@ -139,12 +139,13 @@ mod test {
             }
         }"#;
 
-        let _: ContactRequest = serde_json::from_str(json_str)?;
+        let request: ContactRequest = serde_json::from_str(json_str)?;
+        assert_eq!(request.contact.field_values, None);
         Ok(())
     }
 
     #[test]
-    fn deserialize_3() -> Result<()> {
+    fn deserialize_undefined_should_be_none() -> Result<()> {
         let json_str = r#"{
             "contact": {
                 "email": "johndoe@example.com",
@@ -153,7 +154,8 @@ mod test {
             }
         }"#;
 
-        let _: ContactRequest = serde_json::from_str(json_str)?;
+        let request: ContactRequest = serde_json::from_str(json_str)?;
+        assert_eq!(request.contact.field_values, None);
         Ok(())
     }
 
@@ -166,7 +168,7 @@ mod test {
     }
 
     #[test]
-    fn serialize_2() -> Result<()> {
+    fn serialize_none_works() -> Result<()> {
         let contact = Contact {
             email: "johndoe@example.com".to_owned(),
             first_name: None,
@@ -176,7 +178,23 @@ mod test {
         };
 
         let request = ContactRequest::new(contact);
-        let _ = serde_json::to_string(&request).unwrap();
+        let json = serde_json::to_string(&request).unwrap();
+
+        assert_eq!(
+            json,
+            r#"{
+                "contact": {
+                    "email": "johndoe@example.com",
+                    "firstName": null,
+                    "lastName": null,
+                    "phone": null,
+                    "fieldValues": null
+                }
+            }"#
+            .replace("\n", "")
+            .to_string()
+            .replace(" ", "")
+        );
 
         Ok(())
     }
