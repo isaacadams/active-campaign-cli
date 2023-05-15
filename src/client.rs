@@ -1,4 +1,4 @@
-use crate::ac_builder::ActiveCampaignBuilder;
+use crate::endpoints::ActiveCampaignBuilder;
 use reqwest::{blocking::Body, header, StatusCode};
 
 /// <https://developers.activecampaign.com/reference/overview>
@@ -62,6 +62,13 @@ impl Client {
             .send()
     }
 
+    pub fn contact_find_by_id(
+        &self,
+        id: &str,
+    ) -> Result<reqwest::blocking::Response, reqwest::Error> {
+        self.builder.contact_get(id).send()
+    }
+
     /// <https://developers.activecampaign.com/reference/create-a-new-contact>
     pub fn contact_create<T: Into<Body>>(
         &self,
@@ -113,6 +120,21 @@ pub fn find_and_delete_by_email(client: &Client, email: &str) -> Result<(), reqw
     Ok(())
 }
 
+struct ContactResponse {
+    status: StatusCode,
+    id: String,
+    data: serde_json::Value,
+}
+
+impl ContactResponse {
+    pub fn new(response: reqwest::blocking::Response) -> Option<ContactResponse> {
+        let status = response.status();
+        let data = response.json::<serde_json::Value>().ok()?;
+        let id = data["contact"]["id"].as_str()?.to_owned();
+        Some(Self { status, id, data })
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
@@ -151,9 +173,13 @@ mod test {
     #[test]
     fn create_and_delete_contact() {
         let client = init();
-
         let contact = Contact::default();
+        create_and_delete(&client, contact, |response| {
+            assert_eq!(response.status, StatusCode::CREATED);
+        });
+    }
 
+    fn create_and_delete<F: Fn(&ContactResponse)>(client: &Client, contact: Contact, created: F) {
         // if contact already exists, then delete
         find_and_delete_by_email(&client, &contact.email).unwrap();
 
@@ -162,34 +188,56 @@ mod test {
 
         match response.status() {
             StatusCode::CREATED => {
-                assert!(true);
-                let data = response.json::<serde_json::Value>().unwrap();
-
+                let response = ContactResponse::new(response).unwrap();
+                created(&response);
                 // delete the new contact for cleanup
-                if let Some(id) = data["contact"]["id"].as_str() {
-                    assert!(
-                        client.contact_delete(id).is_ok(),
-                        "failed to delete the contact in cleanup phase"
-                    );
-                }
+                assert!(
+                    client.contact_delete(&response.id).is_ok(),
+                    "failed to delete the contact in cleanup phase"
+                );
             }
             _ => {
                 println!("{:#?}", response.text());
-                assert!(false);
             }
         }
     }
 
     #[test]
     fn contact_sync_works() {
+        let email = "luke@skywalker.com";
         let contact = Contact {
-            email: "".to_string(),
-            first_name: Some("".to_string()),
+            email: email.to_string(),
+            first_name: Some("Luke".to_string()),
             last_name: None,
             phone: None,
             field_values: None,
         };
 
         let client = init();
+        // creates and eventually deletes the contact
+        create_and_delete(&client, contact, |created_response| {
+            let altered_contact = Contact {
+                email: email.to_string(),
+                first_name: Some("Anakin".to_string()),
+                last_name: Some("Skywalker".to_string()),
+                phone: None,
+                field_values: None,
+            };
+
+            let payload = altered_contact.to_request().unwrap();
+            client.contact_sync(payload).unwrap();
+
+            let response = client.contact_find_by_id(&created_response.id).unwrap();
+            let data = response.json::<serde_json::Value>().unwrap();
+
+            assert_eq!(
+                data["contact"]["firstName"],
+                serde_json::Value::String("Anakin".to_string())
+            );
+            assert_eq!(
+                data["contact"]["lastName"],
+                serde_json::Value::String("Skywalker".to_string())
+            );
+        });
     }
 }

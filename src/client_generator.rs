@@ -66,6 +66,7 @@ macro_rules! generate_reqwest_client {
                     $(
                         pub fn [<$resource _ $name>](&self $(, $param: $type)*) -> reqwest::blocking::RequestBuilder {
                             let url = format!(concat!("{}/", $url), self.base_url $(, $param = $param)*);
+                            println!("{} {}", stringify!([<$method:upper>]), &url);
                             self.client.$method(&url)
                         }
                     )+
