@@ -1,4 +1,4 @@
-crate::generate_reqwest_client!(ActiveCampaign, {
+api_client_macro::generate!(ActiveCampaign, {
     contact {
         search: get "contacts",
         get: get "contacts/{id}" id: &str,

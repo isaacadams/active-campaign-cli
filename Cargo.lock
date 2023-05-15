@@ -6,6 +6,7 @@ version = 3
 name = "active-campaign"
 version = "0.1.0"
 dependencies = [
+ "api-client-macro",
  "csv",
  "dotenvy",
  "once_cell",
@@ -14,6 +15,16 @@ dependencies = [
  "serde",
  "serde_json",
  "thiserror",
+]
+
+[[package]]
+name = "api-client-macro"
+version = "0.1.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "11ab2fb7cdf2ad8fb15da95a5450c25306886d6c78686bd9b7779be73b7a73e1"
+dependencies = [
+ "paste",
+ "reqwest",
 ]
 
 [[package]]

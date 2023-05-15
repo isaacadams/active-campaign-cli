@@ -1,5 +1,4 @@
 mod client;
-mod client_generator;
 mod config;
 mod endpoints;
 mod error;
