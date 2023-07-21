@@ -1,8 +1,11 @@
+#[allow(dead_code)]
 mod client;
 mod config;
 mod endpoints;
 mod error;
+#[allow(dead_code)]
 mod models;
+#[allow(dead_code)]
 mod util;
 
 pub use client::Client;

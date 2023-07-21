@@ -2,10 +2,6 @@ use crate::endpoints::ActiveCampaignBuilder;
 use reqwest::{blocking::Body, header, StatusCode};
 
 /// <https://developers.activecampaign.com/reference/overview>
-pub fn init() -> Client {
-    Client::default()
-}
-
 fn init_client() -> reqwest::blocking::Client {
     let mut headers = header::HeaderMap::new();
     headers.insert(
@@ -120,7 +116,7 @@ pub fn find_and_delete_by_email(client: &Client, email: &str) -> Result<(), reqw
     Ok(())
 }
 
-struct ContactResponse {
+pub struct ContactResponse {
     status: StatusCode,
     id: String,
     data: serde_json::Value,
@@ -140,6 +136,10 @@ mod test {
     use super::*;
     use crate::models::*;
     use reqwest::StatusCode;
+
+    fn init() -> Client {
+        Client::default()
+    }
 
     /* #[test]
     fn try_to_break() {
@@ -183,7 +183,7 @@ mod test {
         // if contact already exists, then delete
         find_and_delete_by_email(&client, &contact.email).unwrap();
 
-        let payload = contact.to_request().unwrap();
+        let payload = contact.into_request().unwrap();
         let response = client.contact_create(payload).unwrap();
 
         match response.status() {
@@ -224,7 +224,7 @@ mod test {
                 field_values: None,
             };
 
-            let payload = altered_contact.to_request().unwrap();
+            let payload = altered_contact.into_request().unwrap();
             client.contact_sync(payload).unwrap();
 
             let response = client.contact_find_by_id(&created_response.id).unwrap();

@@ -53,7 +53,7 @@ impl Contact {
         }
     }
 
-    pub fn to_request(self) -> Result<reqwest::blocking::Body, serde_json::Error> {
+    pub fn into_request(self) -> Result<reqwest::blocking::Body, serde_json::Error> {
         println!("generating request for {}", &self.email);
         let request = ContactRequest { contact: self };
         let json = serde_json::to_string(&request)?;
