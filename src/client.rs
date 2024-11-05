@@ -1,4 +1,4 @@
-use crate::endpoints::ActiveCampaignBuilder;
+use crate::endpoints::blocking::Builder;
 use reqwest::{blocking::Body, header, StatusCode};
 
 /// <https://developers.activecampaign.com/reference/overview>
@@ -17,15 +17,15 @@ fn init_client() -> reqwest::blocking::Client {
         .unwrap()
 }
 
-fn create_builder() -> ActiveCampaignBuilder {
-    ActiveCampaignBuilder::new(
+fn create_builder() -> Builder {
+    Builder::new(
         &crate::config::load_env_var("ACTIVECAMPAIGN_API_BASE_URL"),
         Some(init_client()),
     )
 }
 
 pub struct Client {
-    builder: ActiveCampaignBuilder,
+    builder: Builder,
 }
 
 impl Default for Client {
